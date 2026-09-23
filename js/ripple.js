@@ -4,7 +4,7 @@
  */
 const RIPPLE_CONFIG = {
     STEP: 2, 
-    VELOCITY: 20.0,            // Speed of inward collapse
+    VELOCITY: 10.0,            // Speed of inward collapse
     BASE_DISPLACEMENT: 25.0,   // Base pixel shift at outer radius
     DEFAULT_PADDING: 1.05,     // Scale factor relative to screen boundaries (1.05 = just outside edge)
     WAVE_WIDTH: 80.0,          // Thickness of the wave ring
