@@ -1,16 +1,15 @@
 /**
- * ripple.js - Background-Confined & Battery Optimized
+ * ripple.js - Inward Collapse & Focal Amplification (opposite from the version for Saraswati)
+ * Also, adjusted max rad to 0.4x so it starts out visible.
  */
 const RIPPLE_CONFIG = {
     STEP: 2, 
-    FRICTION: 0.97,
-    VELOCITY: 10.0,
-    INITIAL_AMP: 100,
-    MAX_RADIUS: 1000,
-    MIN_AMPLITUDE: 1.0,
-    WAVE_LENGTH: 0.15,
-    FADE_EXPONENT: 5.0,
-    MIN_INTERVAL: 500 
+    VELOCITY: 20.0,            // Speed of inward collapse
+    BASE_DISPLACEMENT: 25.0,   // Base pixel shift at outer radius
+    DEFAULT_PADDING: 1.05,     // Scale factor relative to screen boundaries (1.05 = just outside edge)
+    WAVE_WIDTH: 80.0,          // Thickness of the wave ring
+    FREQUENCY: 0.1,            // Wave oscillation density
+    MIN_INTERVAL: 400 
 };
 
 let canvas, ctx, img, referenceData, outputImageData, outputBuffer;
@@ -29,7 +28,6 @@ function initRippleEngine() {
         const w = canvas.width = img.naturalWidth;
         const h = canvas.height = img.naturalHeight;
         
-        // Create an off-screen buffer to hold the clean background
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = w;
         tempCanvas.height = h;
@@ -39,7 +37,6 @@ function initRippleEngine() {
         const rawData = tempCtx.getImageData(0, 0, w, h).data;
         referenceData = new Uint32Array(rawData.buffer);
         
-        // Initialize the persistent output buffer
         outputImageData = ctx.createImageData(w, h);
         outputBuffer = new Uint32Array(outputImageData.data.buffer);
         
@@ -56,11 +53,26 @@ function triggerRipple(e) {
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     
+    const clickX = (e.clientX - rect.left) * scaleX;
+    const clickY = (e.clientY - rect.top) * scaleY;
+
+    // Calculate maximum distance to any of the 4 canvas corners
+    const distToTopLeft     = Math.hypot(clickX, clickY);
+    const distToTopRight    = Math.hypot(canvas.width - clickX, clickY);
+    const distToBottomLeft  = Math.hypot(clickX, canvas.height - clickY);
+    const distToBottomRight = Math.hypot(canvas.width - clickX, canvas.height - clickY);
+
+    // Maximum visible distance from click point to screen boundary
+    const maxVisibleDist = Math.max(distToTopLeft, distToTopRight, distToBottomLeft, distToBottomRight);
+
+    // Dynamic starting radius: starts just outside the furthest visible corner
+    const startRadius = maxVisibleDist * RIPPLE_CONFIG.DEFAULT_PADDING * 0.4;
+
     ripples.push({
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY,
-        progress: 0,
-        amplitude: RIPPLE_CONFIG.INITIAL_AMP
+        x: clickX,
+        y: clickY,
+        radius: startRadius,
+        initialRadius: startRadius // Store for focal gain scaling
     });
     
     new Audio('./audio/bubble.wav').play().catch(() => {});
@@ -77,7 +89,6 @@ function renderLoop() {
     const h = canvas.height;
     const s = RIPPLE_CONFIG.STEP;
 
-    // Reset the working buffer to the clean background image
     outputBuffer.set(referenceData);
 
     for (let y = 0; y < h; y += s) {
@@ -88,18 +99,29 @@ function renderLoop() {
                 const r = ripples[i];
                 const dx = x - r.x;
                 const dy = y - r.y;
-                const distSq = dx * dx + dy * dy;
+                const dist = Math.hypot(dx, dy);
                 
-                if (distSq > 3240000) continue; // Pre-calculated 1800 * 1800
+                // Distance relative to current collapsing ring position
+                const delta = dist - r.radius;
 
-                const dist = Math.sqrt(distSq);
-                const diff = dist - r.progress;
-
-                if (diff > -250 && diff < 0) {
+                // Process pixels within the wave's active band
+                if (Math.abs(delta) < RIPPLE_CONFIG.WAVE_WIDTH) {
                     active = true;
-                    const force = (Math.sin(diff * 0.15) * r.amplitude * Math.pow(1 + diff / 250, 5) * (1 - dist / 1800)) / (dist || 1);
-                    dX += dx * force;
-                    dY += dy * force;
+                    
+                    // Gaussian bell curve profile for smooth falloff around ring center
+                    const envelope = Math.exp(-Math.pow(delta / (RIPPLE_CONFIG.WAVE_WIDTH * 0.5), 2));
+                    
+                    // Scale amplification relative to where this specific wave started
+                    const focalGain = (r.initialRadius / Math.max(r.radius, 40));
+                    const currentAmplitude = RIPPLE_CONFIG.BASE_DISPLACEMENT * focalGain;
+                    
+                    // Compute pixel shift magnitude
+                    const displacement = Math.sin(delta * RIPPLE_CONFIG.FREQUENCY) * envelope * currentAmplitude;
+                    
+                    // Normalize vector direction
+                    const norm = dist || 1;
+                    dX += (dx / norm) * displacement;
+                    dY += (dy / norm) * displacement;
                 }
             }
 
@@ -108,7 +130,6 @@ function renderLoop() {
                 const ty = Math.min(h - 1, Math.max(0, (y + dY) | 0));
                 const color = referenceData[ty * w + tx];
 
-                // Apply the displaced color to the block
                 for (let ky = 0; ky < s && (y + ky) < h; ky++) {
                     const offset = (y + ky) * w;
                     for (let kx = 0; kx < s && (x + kx) < w; kx++) {
@@ -126,9 +147,9 @@ function renderLoop() {
 
 function updateRipplePhysics() {
     for (let i = ripples.length - 1; i >= 0; i--) {
-        ripples[i].progress += RIPPLE_CONFIG.VELOCITY;
-        ripples[i].amplitude *= RIPPLE_CONFIG.FRICTION;
-        if (ripples[i].amplitude < 1.0 || ripples[i].progress > 1800) {
+        ripples[i].radius -= RIPPLE_CONFIG.VELOCITY;
+        
+        if (ripples[i].radius <= 0) {
             ripples.splice(i, 1);
         }
     }
