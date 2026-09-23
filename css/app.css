@@ -131,7 +131,7 @@ body, html {
 
 /* Scale down when state is active */
 .conduit-active #portal-wrapper {
-    transform: scale(0.583);
+    transform: scale(0.4);
 }
 
 /* --- Animation Layers --- */
@@ -192,4 +192,82 @@ body, html {
     opacity: 0.8;
     visibility: visible;
     pointer-events: auto;
+}
+
+/* ---------------------------------------- */
+/* --- About Overlay --- */
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: rgba(0, 0, 0, 0.4);
+
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease;
+}
+
+.overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.about-panel {
+    width: 800px;
+    height: 600px;
+    padding: 40px;
+    box-sizing: border-box;
+    border-radius: 16px;
+    overflow: auto;
+
+    background: rgba(255, 240, 240, 0.9);
+    color: darkred;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+    font-size: 1rem;
+    line-height: 1.6;
+
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+}
+
+.overlay-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close-btn {
+    display: inline-block;
+    float: right;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: darkred;
+    cursor: pointer;
+    text-shadow: 0 0 6px rgba(255, 0, 0, 0.5);
+    transition: transform 0.25s ease, color 0.25s ease, text-shadow 0.25s ease;
+}
+
+.close-btn:hover {
+    transform: scale(1.3);
+    color: red;
+    text-shadow: 0 0 12px rgba(0, 0, 0, 0.9);
+}
+
+.about-panel h2 {
+    margin-top: 10px;
+    font-weight: 400;
+}
+
+.about-logo {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.about-logo img {
+    width: 50px;
+    height: 50px;
 }

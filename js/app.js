@@ -39,3 +39,23 @@ function toggleView() {
         if (audioRetne) { audioRetne.currentTime = 0; audioRetne.play().catch(() => {}); }
     }
 }
+
+/* ---------------- For the About overlay panel ---------------------*/
+const aboutLink = document.getElementById('nav-about');
+const aboutOverlay = document.getElementById('about-overlay');
+const closeOverlay = document.getElementById('close-overlay');
+
+aboutLink.addEventListener('click', (event) => {
+    event.preventDefault();
+    aboutOverlay.classList.add('visible');
+});
+
+closeOverlay.addEventListener('click', () => {
+    aboutOverlay.classList.remove('visible');
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        aboutOverlay.classList.remove('visible');
+    }
+});
